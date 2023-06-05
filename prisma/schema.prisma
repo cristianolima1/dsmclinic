@@ -1,0 +1,243 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+// //, "fullTextIndex"]
+datasource db {
+  //provider = "mysql"
+  provider = "postgresql"
+
+  url = env("DATABASE_URL")
+  //directUrl         = env("DIRECT_URL")
+}
+
+model Usuario {
+  id              String            @id @default(uuid())
+  nome            String
+  email           String            @unique
+  senha           String
+  telefone        String?
+  perfil          Perfil            @default(User)
+  deletado        Boolean           @default(false)
+  master_id       Int?
+  master          Boolean           @default(false)
+  status          Boolean           @default(true)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  UsuarioFavorito UsuarioFavorito[]
+  UsuarioEndereco UsuarioEndereco[]
+
+  @@map("usuarios")
+}
+
+model UsuarioEndereco {
+  id         String  @id @default(uuid())
+  rua        String
+  numero     String
+  bairro     String
+  cidade     String
+  uf         String
+  cep        String
+  ind_padrao Boolean
+  cod_cidade String
+  usuario_id String
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+
+  @@map("usuarioEnderecos")
+}
+
+enum Perfil {
+  User
+  Admin
+  Atendente
+
+  @@map("perfis")
+}
+
+model UsuarioFavorito {
+  id                  String          @id @default(uuid())
+  usuario_id          String
+  estabelecimento_idd String
+  usuario             Usuario         @relation(fields: [usuario_id], references: [id])
+  estabelecimento     Estabelecimento @relation(fields: [estabelecimento_idd], references: [id])
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+
+  @@map("usuariosFavoritos")
+}
+
+model Banner {
+  id                    String                  @id @default(uuid())
+  descricao             String
+  foto                  String
+  cod_cidade            String
+  ativo                 Boolean                 @default(true)
+  ordem                 Int
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  BannerEstabelecimento BannerEstabelecimento[]
+
+  @@map("banners")
+}
+
+model BannerEstabelecimento {
+  id                 String           @id @default(uuid())
+  ativo              Boolean          @default(true)
+  ordem              Int
+  estabelecimento_id String?
+  banner_id          String?
+  banner             Banner?          @relation(fields: [banner_id], references: [id])
+  estabelecimento    Estabelecimento? @relation(fields: [estabelecimento_id], references: [id])
+  created_at         DateTime         @default(now())
+  updated_at         DateTime         @updatedAt
+
+  @@map("bannersEstabelecimentos")
+}
+
+model Especialidade {
+  id         String   @id @default(uuid())
+  nome       String
+  ativo      Boolean  @default(true)
+  foto       String?
+  ordem      Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  Estabelecimento     Estabelecimento[]
+  EspecialidadeCidade EspecialidadeCidade[]
+
+  @@map("especialidades")
+}
+
+model Cidade {
+  id                  String                @id @default(uuid())
+  cod_cidade          String
+  nome                String
+  uf                  String
+  status              Boolean               @default(true)
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  Profissional        Profissional[]
+  Servico             Servico[]
+  Horario             Horario[]
+  EspecialidadeCidade EspecialidadeCidade[]
+
+  @@map("cidades")
+}
+
+model EspecialidadeCidade {
+  id    String  @id @default(uuid())
+  ativo Boolean @default(true)
+  ordem Int
+
+  especialidade_id String
+  cidade_id        String
+  especialidade    Especialidade @relation(fields: [especialidade_id], references: [id])
+  cidade           Cidade        @relation(fields: [cidade_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("especialidadesCidades")
+}
+
+model Estabelecimento {
+  id                    String                  @id @default(uuid())
+  // cod_cidade            String
+  nome                  String                  @unique
+  foto                  String
+  slug                  String                  @unique
+  avaliacao             Decimal
+  rua                   String
+  numero                String
+  bairro                String
+  ponto_referencia      String
+  cidade                String
+  uf                    String
+  cod_cidade            String
+  convenio              Boolean
+  particular            Boolean
+  qtd_avaliacao         String
+  ativo                 Boolean                 @default(true)
+  created_at            DateTime                @default(now())
+  updated_at            DateTime                @updatedAt
+  especialidade         Especialidade           @relation(fields: [especialidade_id], references: [id])
+  especialidade_id      String
+  BannerEstabelecimento BannerEstabelecimento[]
+  UsuarioFavorito       UsuarioFavorito[]
+  Profissional          Profissional[]
+  Servico               Servico[]
+  Horario               Horario[]
+
+  @@map("estabelecimentos")
+}
+
+model Profissional {
+  id                 String   @id @default(uuid())
+  Nome               String
+  cidade_id          String
+  estabelecimento_id String
+  ativo              Boolean  @default(true)
+  convenio           Boolean
+  particular         Boolean
+  ordem              Int
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  cidade          Cidade          @relation(fields: [cidade_id], references: [id])
+  estabelecimento Estabelecimento @relation(fields: [estabelecimento_id], references: [id])
+  Servico         Servico[]
+  Horario         Horario[]
+
+  @@map("profissionais")
+}
+
+model Servico {
+  id                 String          @id @default(uuid())
+  Nome               String
+  cidade_id          String
+  estabelecimento_id String
+  profissional_id    String
+  valor              Float?
+  convenio           Boolean
+  particular         Boolean
+  ativo              Boolean         @default(true)
+  ordem              Int
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+  cidade             Cidade          @relation(fields: [cidade_id], references: [id])
+  estabelecimento    Estabelecimento @relation(fields: [estabelecimento_id], references: [id])
+  profissional       Profissional    @relation(fields: [profissional_id], references: [id])
+  Horario            Horario[]
+
+  @@map("servicos")
+}
+
+model Horario {
+  id                 String          @id @default(uuid())
+  Nome               String
+  diasemana          String
+  hora               String
+  cidade_id          String
+  estabelecimento_id String
+  profissional_id    String
+  servico_id         String
+  valor              Float?
+  convenio           Boolean
+  particular         Boolean
+  ativo              Boolean         @default(true)
+  ordem              Int
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+  servico            Servico         @relation(fields: [servico_id], references: [id])
+  cidade             Cidade          @relation(fields: [cidade_id], references: [id])
+  estabelecimento    Estabelecimento @relation(fields: [estabelecimento_id], references: [id])
+  profissional       Profissional    @relation(fields: [profissional_id], references: [id])
+
+  @@map("horarios")
+}
