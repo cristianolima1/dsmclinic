@@ -14,7 +14,8 @@ app.use(express.json());
 routes(app);
 
 ///https://github.com/cristianolima1/dsmclinic.git//
-app.listen(21086, () => {
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
 console.log("servidor rodando na Porta 3000");
 });
 
